@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سکانەرا دەوامێ</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body { font-family: 'Vazirmatn', sans-serif; background: #f1f5f9; text-align: center; padding: 20px; }
+        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .mode-btn { flex: 1; padding: 15px; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; font-weight: bold; background: white; transition: 0.3s; }
+        .active-in { border-color: #10b981; background: #ecfdf5; color: #10b981; }
+        .active-out { border-color: #e11d48; background: #fff1f2; color: #e11d48; }
+        #reader { width: 100%; border-radius: 15px; overflow: hidden; border: none !important; }
+        #status { margin-top: 15px; font-weight: bold; padding: 10px; border-radius: 8px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="color: #1e40af;">👋 بخێر بێی</h2>
+    <p>تکایە جۆرێ سکانێ هەلبژێرە:</p>
+    
+    <div class="mode-selector">
+        <div id="btnIn" class="mode-btn active-in" onclick="setMode('هاتن')">📥 هاتن</div>
+        <div id="btnOut" class="mode-btn" onclick="setMode('چوون')">📤 چوون</div>
+    </div>
+
+    <div id="reader"></div>
+    <div id="status"></div>
+</div>
+
+<script>
+    let currentMode = "هاتن";
+    const scriptURL = "AKfycbwcUA6uysJ_23i8iUd-hn-zBwRh3zAElkQts8RiGss2h7Wa3XtBYP7lNBqSFHqtxTIJYg";
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('btnIn').className = 'mode-btn ' + (mode === 'هاتن' ? 'active-in' : '');
+        document.getElementById('btnOut').className = 'mode-btn ' + (mode === 'چوون' ? 'active-out' : '');
+    }
+
+    function onScanSuccess(decodedText) {
+        const status = document.getElementById('status');
+        status.style.display = "block";
+        status.innerText = "یێ دهێتە تۆمارکرن...";
+        status.style.background = "#f1f5f9";
+
+        fetch(scriptURL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: decodedText, type: currentMode, time: new Date() })
+        }).then(() => {
+            status.innerText = `✅ ${currentMode} ب سەرکەفتی تۆماربوو!`;
+            status.style.background = currentMode === 'هاتن' ? "#dcfce7" : "#fee2e2";
+            setTimeout(() => { status.style.display = "none"; }, 3000);
+        });
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
+</script>
+</body>
+</html>

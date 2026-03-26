@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management Panel - Arda</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #f1f5f9; margin: 0; padding: 10px; direction: rtl; }
+        .container { max-width: 1000px; margin: auto; display: none; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .top-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn { color: white; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; font-family: inherit; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-navy { background-color: #1e1e2d; }
+        .btn-green { background-color: #10b981; }
+        .btn-red { background-color: #e11d48; }
+        .btn-slate { background-color: #64748b; }
+        .section-title { color: #1e1e2d; font-weight: bold; border-right: 4px solid #1e1e2d; padding-right: 10px; margin-bottom: 15px; }
+        #settingsArea, #reportArea, #barcodeArea { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; font-size: 14px; }
+        th { background-color: #f8fafc; color: #1e1e2d; }
+        input { padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; font-family: inherit; width: 100%; box-sizing: border-box; }
+        .qr-card { background: white; border: 1px solid #e2e8f0; border-radius: 15px; padding: 15px; text-align: center; }
+        #qrModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 40px; border-radius: 25px; text-align: center; max-width: 90%; }
+        #loginSection { text-align: center; margin-top: 100px; }
+        .setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    </style>
+</head>
+<body>
+
+    <div id="loginSection" class="card" style="max-width: 350px; margin: auto;">
+        <h2>🔐 چوونە ژوور</h2>
+        <input type="password" id="passInput" placeholder="پاسوۆرد">
+        <button class="btn btn-navy" onclick="checkPass()" style="width:100%; margin-top:15px; justify-content:center;">ڤەکرن</button>
+    </div>
+
+    <div id="mainUI" class="container">
+        <div class="top-bar">
+            <button class="btn btn-navy" onclick="toggleSection('settingsArea')">⚙️ سێتینگ</button>
+            <button class="btn btn-navy" onclick="toggleSection('reportArea')">📊 ڕاپۆرت</button>
+            <button class="btn btn-green" onclick="toggleSection('barcodeArea')">📇 بارکۆد</button>
+            <button class="btn btn-slate" onclick="loadData()">↻</button>
+        </div>
+
+        <div id="settingsArea" class="card">
+            <div class="section-title">⚙️ کاتژمێرێن دەوامێ و لێبۆرین</div>
+            <div class="setup-grid">
+                <div><label>شێفت ١ (ژ):</label><input type="time" id="s1Start" value="08:00"></div>
+                <div><label>شێفت ١ (بۆ):</label><input type="time" id="s1End" value="16:00"></div>
+                <div><label>شێفت ٢ (ژ):</label><input type="time" id="s2Start" value="16:00"></div>
+                <div><label>شێفت ٢ (بۆ):</label><input type="time" id="s2End" value="23:59"></div>
+                <div><label>لێبۆرینا هاتنێ (خولەک):</label><input type="number" id="graceIn" value="15"></div>
+                <div><label>لێبۆرینا چوونێ (خولەک):</label><input type="number" id="graceOut" value="5"></div>
+            </div>
+        </div>
+
+        <div id="reportArea" class="card">
+            <div class="section-title">📊 ڕاپۆرتا گشتی</div>
+            <div style="display:flex; gap:10px; margin-bottom:15px; align-items:flex-end;">
+                <div style="flex:1;"><label>هەیڤ:</label><input type="number" id="mFilter" value="3"></div>
+                <div style="flex:1;"><label>سال:</label><input type="number" id="yFilter" value="2026"></div>
+                <button class="btn btn-green" onclick="loadData()">🔍</button>
+                <button class="btn btn-red" onclick="downloadReportPDF()">📥 PDF</button>
+            </div>
+            <div id="pdfReportContent">
+                <table id="summaryTable">
+                    <thead><tr><th>کارمەند</th><th>تەخیری</th><th>زێدەکاری</th><th>ڕۆژ</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="barcodeArea" class="card">
+            <div class="section-title">👤 زێدەکرنا کارمەندی</div>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <input type="text" id="newStaffName" placeholder="ناڤێ کارمەندی">
+                <button class="btn btn-green" onclick="addNewStaff()">زێدەکرن</button>
+            </div>
+            <div id="staffList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;"></div>
+        </div>
+
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div class="section-title" style="padding:15px; margin:0;">📜 تۆمارێن ڕۆژانە</div>
+            <div style="overflow-x:auto;">
+                <table id="attendanceTable">
+                    <thead><tr><th>رێکەفت</th><th>کارمەند</th><th>جۆر</th><th>دەم</th><th>X</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="qrModal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h1 id="modalName"></h1>
+            <div id="modalQR"></div>
+            <button class="btn btn-navy" onclick="closeModal()" style="width:100%; margin-top:20px;">باشە</button>
+        </div>
+    </div>
+
+    <script>
+        const scriptURL = ScriptApp.getService().getUrl(); 
+        let rawData = [];
+        let staffMembers = JSON.parse(localStorage.getItem('staffList')) || [];
+
+        function checkPass() {
+            if (document.getElementById('passInput').value === "1234") {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('mainUI').style.display = 'block';
+                loadData(); renderStaff();
+            }
+        }
+
+        function toggleSection(id) {
+            const el = document.getElementById(id);
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function loadData() {
+            fetch(scriptURL + "?read=true").then(res => res.json()).then(data => { 
+                rawData = data; renderAttendance();
+            });
+        }
+
+        function renderAttendance() {
+            const aBody = document.querySelector("#attendanceTable tbody");
+            const sBody = document.querySelector("#summaryTable tbody");
+            const mF = document.getElementById('mFilter').value;
+            const yF = document.getElementById('yFilter').value;
+            aBody.innerHTML = ""; sBody.innerHTML = "";
+            let stats = {};
+
+            for (let i = 1; i < rawData.length; i++) {
+                let dObj = new Date(rawData[i][1]);
+                let name = rawData[i][0]; let type = rawData[i][2];
+                aBody.innerHTML += `<tr><td>${dObj.toLocaleDateString('ku-IQ')}</td><td><b>${name}</b></td><td><b style="color:${type==='هاتن'?'#10b981':'#e11d48'}">${type}</b></td><td>${dObj.getHours()}:${dObj.getMinutes().toString().padStart(2, '0')}</td><td><button onclick="deleteRow(${i})" style="color:red; border:none; background:none;">X</button></td></tr>`;
+                if (dObj.getMonth() + 1 == mF && dObj.getFullYear() == yF) {
+                    if (!stats[name]) stats[name] = { d: 0 }; stats[name].d++;
+                }
+            }
+            for (let n in stats) {
+                sBody.innerHTML += `<tr><td><b>${n}</b></td><td>0</td><td>0</td><td>${Math.ceil(stats[n].d/2)} ڕۆژ</td></tr>`;
+            }
+        }
+
+        function addNewStaff() {
+            let n = document.getElementById('newStaffName').value.trim();
+            if (!n) return; staffMembers.push(n);
+            localStorage.setItem('staffList', JSON.stringify(staffMembers));
+            document.getElementById('newStaffName').value = ""; renderStaff();
+        }
+
+        function renderStaff() {
+            const list = document.getElementById('staffList'); list.innerHTML = "";
+            staffMembers.forEach((name, index) => {
+                list.innerHTML += `<div class="qr-card"><b>${name}</b><button class="btn btn-navy" style="width:100%; margin-top:10px; font-size:12px;" onclick="showQR('${name}')">👀 نیشاندان</button><button class="btn btn-red" style="width:100%; margin-top:5px; font-size:10px;" onclick="deleteStaff(${index})">ژێبرن</button></div>`;
+            });
+        }
+
+        function showQR(name) {
+            document.getElementById('modalName').innerText = name;
+            document.getElementById('modalQR').innerHTML = "";
+            new QRCode(document.getElementById("modalQR"), { text: name, width: 250, height: 250 });
+            document.getElementById('qrModal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('qrModal').style.display = 'none'; }
+        function downloadReportPDF() { html2pdf().from(document.getElementById('pdfReportContent')).save('Report.pdf'); }
+        function deleteRow(i) { if(confirm("ژێببیت؟")) fetch(scriptURL + "?del=true&row=" + i).then(() => loadData()); }
+        function deleteStaff(i) { if(confirm("ژێببیت؟")) { staffMembers.splice(i,1); localStorage.setItem('staffList', JSON.stringify(staffMembers)); renderStaff(); } }
+    </script>
+</body>
+</html>

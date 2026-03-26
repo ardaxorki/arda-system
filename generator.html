@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>دروستکرنا QR - ب پاسۆرد</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f1f5f9; }
+        .box { background: white; padding: 30px; border-radius: 15px; max-width: 400px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; }
+        button { background: #1e40af; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%; }
+        #qrcode { margin-top: 20px; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>🔑 زێدەکرنا کارمەندێ نوی</h2>
+        <input type="password" id="adminPass" placeholder="پاسۆردێ ئەدمینی">
+        <hr>
+        <input type="text" id="staffName" placeholder="ناڤێ کارمەندی ب ئینگلیزی">
+        <button onclick="generateQR()">دروستکرنا QR</button>
+        <div id="qrcode"></div>
+    </div>
+
+    <script>
+        function generateQR() {
+            const pass = document.getElementById('adminPass').value;
+            const name = document.getElementById('staffName').value;
+            
+            if (pass !== "1234") {
+                alert("پاسۆرد خەلەتە! تو نەشێی QR چێکەی.");
+                return;
+            }
+            if (!name) { alert("تکایە ناڤی بنڤێسە"); return; }
+
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), name);
+            alert("QR بۆ کارمەند " + name + " هاتە دروستکرن!");
+        }
+    </script>
+</body>
+</html>

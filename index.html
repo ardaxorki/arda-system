@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سکانەرێ دەوامێ - Arda</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #f1f5f9; margin: 0; padding: 10px; direction: rtl; }
+        
+        /* سەرێ شاشێ و لینکا ئەدمین */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 10px; }
+        .admin-link { color: #1e1e2d; text-decoration: none; font-weight: bold; font-size: 14px; background: #e2e8f0; padding: 8px 15px; border-radius: 10px; }
+
+        .card { background: white; max-width: 450px; margin: auto; padding: 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center; }
+        h2 { color: #1e1e2d; margin: 0 0 20px 0; }
+        
+        .section-title { font-size: 13px; color: #64748b; margin-bottom: 8px; font-weight: bold; display: block; }
+
+        /* بوتۆنێن هەڵبژارتنێ */
+        .grid-select { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn { padding: 12px; border-radius: 12px; border: 2px solid #e2e8f0; font-family: inherit; font-weight: bold; cursor: pointer; transition: 0.3s; background: white; }
+        
+        /* ڕەنگێن شێفتی */
+        .btn-shift.active { background: #1e1e2d; color: white; border-color: #1e1e2d; }
+        
+        /* ڕەنگێن هاتن و چوونێ */
+        .btn-type-in.active { background: #10b981; color: white; border-color: #10b981; }
+        .btn-type-out.active { background: #e11d48; color: white; border-color: #e11d48; }
+
+        /* کامێرا */
+        #reader { width: 100%; border-radius: 15px; overflow: hidden; border: none !important; background: #f8fafc; }
+        
+        .status { margin-top: 15px; padding: 12px; border-radius: 10px; background: #f8fafc; font-weight: bold; min-height: 25px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <span style="font-weight: bold; color: #64748b;">سیستەمێ ئاردا</span>
+        <a href="admin.html" class="admin-link">⚙️ ئەدمین پانێل</a>
+    </div>
+
+    <div class="card">
+        <h2>📷 سکانەرێ دەوامێ</h2>
+
+        <span class="section-title">هەڵبژارتنا شێفتی:</span>
+        <div class="grid-select">
+            <button id="s1" class="btn btn-shift active" onclick="setShift(1)">شێفت ١</button>
+            <button id="s2" class="btn btn-shift" onclick="setShift(2)">شێفت ٢</button>
+        </div>
+
+        <span class="section-title">جۆرێ تۆمارکرنێ:</span>
+        <div class="grid-select">
+            <button id="tIn" class="btn btn-type-in active" onclick="setType('هاتن')">📥 هاتن</button>
+            <button id="tOut" class="btn btn-type-out" onclick="setType('چوون')">📤 چوون</button>
+        </div>
+
+        <div id="reader"></div>
+
+        <div id="status" class="status">ل هیڤیا سکانێ نە...</div>
+    </div>
+
+    <script>
+        // لینکێ Web App یێ گۆگڵ لێرە دانە
+        const scriptURL = "AKfycbxVkI4Fn7oYfVOCSt0KGBk9_oWVn1VsQIP9Tm6Js1r-dYnnhu2wGgdriVT9e0MKly52"; 
+        
+        let currentShift = 1;
+        let currentType = "هاتن";
+        let html5QrcodeScanner;
+
+        function setShift(s) {
+            currentShift = s;
+            document.getElementById('s1').classList.toggle('active', s === 1);
+            document.getElementById('s2').classList.toggle('active', s === 2);
+        }
+
+        function setType(t) {
+            currentType = t;
+            document.getElementById('tIn').classList.toggle('active', t === 'هاتن');
+            document.getElementById('tOut').classList.toggle('active', t === 'چوون');
+        }
+
+        function onScanSuccess(decodedText) {
+            html5QrcodeScanner.clear();
+            document.getElementById('status').innerText = "⏳ یێ تۆمار دکەت...";
+
+            // ناردنا داتا ب شێوەیەکێ کو شێفت ژی تێدا بیت
+            const userName = decodedText + " (شێفت " + currentShift + ")";
+
+            fetch(`${scriptURL}?name=${encodeURIComponent(userName)}&type=${encodeURIComponent(currentType)}`)
+                .then(() => {
+                    document.getElementById('status').innerHTML = `✅ <span style="color:#10b981">${decodedText}</span> تۆماربوو`;
+                    setTimeout(startScanner, 3000);
+                })
+                .catch(() => {
+                    alert("ئاریشەیەک هەبوو!");
+                    startScanner();
+                });
+        }
+
+        function startScanner() {
+            document.getElementById('status').innerText = "ل هیڤیا سکانێ نە...";
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                fps: 10, 
+                qrbox: 250,
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] 
+            });
+            html5QrcodeScanner.render(onScanSuccess);
+        }
+
+        startScanner();
+    </script>
+</body>
+</html>
